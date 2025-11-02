@@ -11,10 +11,12 @@ import {
   type accounts as accountsType,
 } from "@/db/schema";
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, type InferInsertModel } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // --- Transaction Actions ---
+
+type InsertTransaction = InferInsertModel<typeof transactionsTable>;
 
 const AddTxnSchema = z.object({
   description: z.string().min(1),
@@ -43,17 +45,18 @@ export async function addTransaction(input: z.infer<typeof AddTxnSchema>) {
       return { error: `Account "${accountName}" not found.` };
     }
 
-    const signedAmount = type === "expense" ? -Math.abs(amount) : Math.abs(amount);
+    const signedAmount = (type === "expense" ? -Math.abs(amount) : Math.abs(amount)).toString();
 
     await db.insert(transactionsTable).values({
-      userId,
+      userId: userId,
       amount: signedAmount,
       type,
-      ...values,
+      description: values.description,
+      category: values.category,
       accountId: account.id,
-      accountName: account.name, 
-      date: values.date ? new Date(values.date) : new Date(),
-    });
+      accountName: account.name,
+      date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
+    } satisfies typeof transactionsTable.$inferInsert);
 
     revalidatePath("/dashboard");
     revalidatePath("/transactions");
@@ -92,13 +95,13 @@ export async function addTransactions(
     }
     const defaultAccount = userAccounts[0];
 
-    const formattedTransactions = transactions.map((t) => ({
-      userId,
+    const formattedTransactions = transactions.map((t): typeof transactionsTable.$inferInsert => ({
+      userId: userId,
       description: t.description,
-      amount: t.type === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount),
+      amount: (t.type === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount)).toString(),
       type: t.type,
       category: t.category || "Uncategorized",
-      date: new Date(t.date),
+      date: new Date(t.date).toISOString(),
       accountName: defaultAccount.name,
       accountId: defaultAccount.id,
     }));
@@ -179,10 +182,34 @@ export async function getSpendingByCategory() {
 
 
 // --- Account Actions ---
+// Ensure a default account exists for the user. This creates a durable default account
+// (e.g. "Main Account") the first time a user opens the app. This avoids empty
+// account lists for logged-in users and improves onboarding.
+async function ensureDefaultAccount(userId: string) {
+  const existing = await db.query.accounts.findFirst({
+    where: eq(accounts.userId, userId),
+  });
+  if (!existing) {
+    await db.insert(accounts).values({
+      userId,
+      name: "Main Account",
+      balance: "0",
+    });
+  }
+}
 
 export async function getAllAccounts(): Promise<Array<typeof accountsType.$inferSelect>> {
   const { userId } = await auth();
   if (!userId) return [];
+
+  // Create a default account for new users so the UI always has at least one account to show.
+  try {
+    await ensureDefaultAccount(userId);
+  } catch (e) {
+    console.error("Failed to ensure default account:", e);
+    // continue and attempt to return whatever accounts exist
+  }
+
   return await db.query.accounts.findMany({
     where: eq(accounts.userId, userId),
     orderBy: [desc(accounts.createdAt)],
@@ -205,11 +232,11 @@ export async function addBudget(input: z.infer<typeof AddBudgetSchema>) {
     if (!parsed.success) return { error: "Invalid data" };
 
     await db.insert(budgetsTable).values({
-      userId,
+      userId: userId,
       category: parsed.data.category,
-      limit: parsed.data.limit,
-      spent: 0,
-    });
+      limit: parsed.data.limit.toString(),
+      spent: "0",
+    } satisfies typeof budgetsTable.$inferInsert);
 
     revalidatePath("/budgets");
     revalidatePath("/dashboard");
@@ -243,12 +270,12 @@ export async function addGoal(input: z.infer<typeof AddGoalSchema>) {
     if (!parsed.success) return { error: "Invalid data" };
 
     await db.insert(goalsTable).values({
-      userId,
+      userId: userId,
       name: parsed.data.name,
-      targetAmount: parsed.data.targetAmount,
-      currentAmount: 0,
-      deadline: parsed.data.deadline ? new Date(parsed.data.deadline) : null,
-    });
+      targetAmount: parsed.data.targetAmount.toString(),
+      currentAmount: "0",
+      deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
+    } satisfies typeof goalsTable.$inferInsert);
 
     revalidatePath("/goals");
     revalidatePath("/dashboard");

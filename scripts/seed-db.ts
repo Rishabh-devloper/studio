@@ -14,8 +14,12 @@ async function seed() {
   console.log('🌱 Seeding database...');
 
   try {
-    // IMPORTANT: Replace with your actual Clerk user ID
-    const userId = 'user_34vCY8nr98fTvm7h178dXztVGEw';
+    // Use SEED_USER_ID or CLERK_USER_ID if provided; otherwise fall back to the example ID.
+    // To seed data for your account, run: `SEED_USER_ID=your_clerk_id npm run db:seed`
+    const userId = process.env.SEED_USER_ID ?? process.env.CLERK_USER_ID ?? 'user_34vCY8nr98fTvm7h178dXztVGEw';
+    if (!process.env.SEED_USER_ID && !process.env.CLERK_USER_ID) {
+      console.warn('No SEED_USER_ID or CLERK_USER_ID provided — seeding using default example user id. To seed for your user, set SEED_USER_ID in .env.local or pass it when running the script.');
+    }
 
     // Create a default account
     console.log('Creating account...');

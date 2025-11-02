@@ -60,6 +60,7 @@ export function AddTransactionDialog({
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const noAccounts = accounts.length === 0;
 
   const form = useForm<z.infer<typeof transactionSchema>>({
     resolver: zodResolver(transactionSchema),
@@ -68,8 +69,9 @@ export function AddTransactionDialog({
       amount: 0,
       type: "expense",
       category: "",
-      // Set a default account if available.
-      accountName: accounts[0]?.name || "",
+      // Set a default account if available. Use a non-empty sentinel when none exist to avoid
+      // passing an empty string into Select (which causes a runtime error).
+      accountName: accounts[0]?.name || "__no_account",
     },
   });
 
@@ -169,14 +171,18 @@ export function AddTransactionDialog({
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Account</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                                {accounts.map((acc) => (
-                                    <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={noAccounts}>
+              <FormControl><SelectTrigger><SelectValue placeholder={noAccounts ? "No accounts available" : "Select an account"} /></SelectTrigger></FormControl>
+              <SelectContent>
+                {noAccounts ? (
+                  <SelectItem key="none" value="__no_account">No accounts found</SelectItem>
+                ) : (
+                  accounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
                         <FormMessage />
                     </FormItem>
                 )}
@@ -204,7 +210,19 @@ export function AddTransactionDialog({
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={isPending}>Add Transaction</Button>
+              {noAccounts ? (
+                <div className="flex w-full flex-col items-stretch gap-2">
+                  <div className="text-sm text-muted-foreground">No accounts found. Create an account in Settings to add transactions.</div>
+                  <div className="flex gap-2">
+                    <Button asChild>
+                      <a href="/settings">Go to Settings</a>
+                    </Button>
+                    <Button variant="ghost" onClick={() => setOpen(false)}>Close</Button>
+                  </div>
+                </div>
+              ) : (
+                <Button type="submit" disabled={isPending}>Add Transaction</Button>
+              )}
             </DialogFooter>
           </form>
         </Form>
