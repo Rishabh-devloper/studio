@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { formatCurrency } from '@/lib/utils';
 
 interface ReportsChartProps {
-  data: { name: string; value: number }[];
+  data: { category: string; value: number }[];
 }
 
 export function ReportsChart({ data }: ReportsChartProps) {

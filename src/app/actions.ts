@@ -11,7 +11,7 @@ import {
   type accounts as accountsType,
 } from "@/db/schema";
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // --- Transaction Actions ---
@@ -128,6 +128,29 @@ export async function getAllTransactions() {
     orderBy: [desc(transactionsTable.date)],
   });
 }
+
+export async function getSpendingByCategory() {
+  const { userId } = await auth();
+  if (!userId) return [];
+
+  const result = await db
+    .select({
+      category: transactionsTable.category,
+      value: sql<number>`abs(sum(${transactionsTable.amount}))`.mapWith(Number),
+    })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.type, 'expense')
+      )
+    )
+    .groupBy(transactionsTable.category)
+    .orderBy(desc(sql`sum(${transactionsTable.amount})`));
+
+  return result;
+}
+
 
 // --- Account Actions ---
 

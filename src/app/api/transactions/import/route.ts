@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     const { data } = Papa.parse(fileContent, {
       header: true,
       skipEmptyLines: true,
+      dynamicTyping: true,
     });
 
     const transactions = z.array(transactionSchema).parse(data);

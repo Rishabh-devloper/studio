@@ -2,19 +2,22 @@
   "name": "nextn",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack -p 9002",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "NODE_ENV=production next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
-  },
+  
+    "scripts": {
+      "dev": "next dev --turbopack -p 9002",
+      "build": "NODE_ENV=production next build",
+      "start": "next start",
+      "lint": "next lint",
+      "typecheck": "tsc --noEmit",
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "drizzle-kit migrate",
+      "db:push": "drizzle-kit push",
+      "db:studio": "drizzle-kit studio",
+      "db:reset": "tsx scripts/reset-db.ts",
+      "db:seed": "tsx scripts/seed-db.ts",
+      "db:verify": "tsx scripts/verify-db.ts"
+    }
+  ,
   "dependencies": {
     "@clerk/nextjs": "^6.34.1",
     "@genkit-ai/google-genai": "^1.20.0",

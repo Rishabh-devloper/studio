@@ -10,7 +10,7 @@ import { db } from "@/db";
 import { budgets as budgetsTable, goals as goalsTable, transactions as transactionsTable } from "@/db/schema";
 import { auth } from "@clerk/nextjs/server";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { getMonthlyFinancialData, getAllAccounts } from "@/app/actions";
+import { getMonthlyFinancialData, getAllAccounts, getRecentTransactions, getAllBudgets, getAllGoals } from "@/app/actions";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -24,11 +24,11 @@ export default async function DashboardPage() {
   }
 
   const [recent, incomeSumRes, expenseSumRes, budgets, goals, monthlyData, accounts] = await Promise.all([
-    db.select().from(transactionsTable).where(eq(transactionsTable.userId, userId)).orderBy(desc(transactionsTable.date)).limit(5),
+    getRecentTransactions(5),
     db.select({ sum: sql<number>`COALESCE(SUM(CASE WHEN ${transactionsTable.type} = 'income' THEN ${transactionsTable.amount} ELSE 0 END), 0)` }).from(transactionsTable).where(eq(transactionsTable.userId, userId)),
     db.select({ sum: sql<number>`COALESCE(SUM(CASE WHEN ${transactionsTable.type} = 'expense' THEN ${transactionsTable.amount} ELSE 0 END), 0)` }).from(transactionsTable).where(eq(transactionsTable.userId, userId)),
-    db.select().from(budgetsTable).where(eq(budgetsTable.userId, userId)),
-    db.select().from(goalsTable).where(eq(goalsTable.userId, userId)),
+    getAllBudgets(),
+    getAllGoals(),
     getMonthlyFinancialData(),
     getAllAccounts(),
   ]);

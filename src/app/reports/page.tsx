@@ -52,7 +52,7 @@ export default async function ReportsPage() {
             <TrendingDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{topCategory?.name || 'N/A'}</div>
+            <div className="text-2xl font-bold">{topCategory?.category || 'N/A'}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {topCategory ? formatCurrency(topCategory.value) : 'No expenses yet'}
             </p>
