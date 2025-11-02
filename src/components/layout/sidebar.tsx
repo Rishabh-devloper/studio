@@ -17,13 +17,15 @@ import {
   Target,
   BarChart3,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/budgets", label: "Budgets", icon: CircleDollarSign },
   { href: "/goals", label: "Goals", icon: Target },
@@ -33,10 +35,11 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const userAvatar = PlaceHolderImages.find((img) => img.id === "user-avatar");
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   return (
-    <Sidebar className="border-r" variant="sidebar">
+    <Sidebar className="border-r" variant="sidebar" aria-label="Primary">
       <SidebarHeader className="h-14">
         <div className="flex items-center gap-2">
           <WealthWiseLogo className="w-7 h-7 text-primary" />
@@ -45,36 +48,59 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="flex-1 p-2">
         <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.label}
-              >
-                <a href={item.href}>
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <SidebarMenuItem key={item.label}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={item.label}
+                >
+                  <a
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary rounded-md"
+                  >
+                    <item.icon className="h-4 w-4" aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="border-t p-2">
-        <div className="flex items-center gap-3 p-2">
-          <Avatar className="h-9 w-9">
-            {userAvatar && (
-              <AvatarImage src={userAvatar.imageUrl} alt={userAvatar.description} data-ai-hint={userAvatar.imageHint} />
-            )}
-            <AvatarFallback>JD</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">John Doe</span>
-            <span className="text-xs text-muted-foreground">
-              john.doe@email.com
-            </span>
+        <div className="flex items-center justify-between gap-2 p-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Avatar className="h-9 w-9 shrink-0">
+              {user?.imageUrl && (
+                <AvatarImage src={user.imageUrl} alt={user.fullName || "User"} />
+              )}
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-medium truncate">
+                {user?.fullName || user?.firstName || "User"}
+              </span>
+              <span className="text-xs text-muted-foreground truncate">
+                {user?.emailAddresses?.[0]?.emailAddress || ""}
+              </span>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={() => signOut()}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>

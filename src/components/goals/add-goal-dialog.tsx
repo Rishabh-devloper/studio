@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { goals } from "@/lib/data";
+import { addGoal } from "@/app/actions";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "../ui/calendar";
@@ -55,15 +55,20 @@ export default function AddGoalDialog({
     },
   });
 
-  const onSubmit = (values: z.infer<typeof goalSchema>) => {
-    console.log(values);
-    goals.push({
-        id: `goal_${Date.now()}`,
-        name: values.name,
-        targetAmount: values.targetAmount,
-        currentAmount: 0,
-        deadline: values.deadline.toISOString().split('T')[0],
+  const onSubmit = async (values: z.infer<typeof goalSchema>) => {
+    const result = await addGoal({
+      name: values.name,
+      targetAmount: values.targetAmount,
+      deadline: values.deadline.toISOString().split('T')[0],
     });
+    if ("error" in result) {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
     toast({
       title: "Success!",
       description: "Your new financial goal has been set.",

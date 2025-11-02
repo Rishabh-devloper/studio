@@ -32,9 +32,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { getCategorySuggestion } from "@/app/actions";
+import { getCategorySuggestion, addTransaction } from "@/app/actions";
 import { Wand2 } from "lucide-react";
-import { transactions } from "@/lib/data";
 import type { Category } from "@/lib/types";
 
 const transactionSchema = z.object({
@@ -106,23 +105,22 @@ export function AddTransactionDialog({
   };
 
   const onSubmit = (values: z.infer<typeof transactionSchema>) => {
-    console.log(values);
-    // This is where you would typically call a server action to save the transaction
-    transactions.unshift({
-        id: `txn_${Date.now()}`,
-        date: new Date().toISOString().split('T')[0],
+    startTransition(async () => {
+      const res = await addTransaction({
         description: values.description,
-        amount: values.type === 'expense' ? -values.amount : values.amount,
+        amount: values.amount,
         type: values.type,
-        category: values.category as Category,
-        account: "Checking"
+        category: values.category,
+        date: new Date().toISOString().split('T')[0],
+      });
+      if ((res as any)?.error) {
+        toast({ title: "Error", description: (res as any).error, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Success!", description: "Your transaction has been added." });
+      setOpen(false);
+      form.reset();
     });
-    toast({
-      title: "Success!",
-      description: "Your transaction has been added.",
-    });
-    setOpen(false);
-    form.reset();
   };
 
   return (
@@ -150,7 +148,7 @@ export function AddTransactionDialog({
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="amount"
@@ -158,7 +156,7 @@ export function AddTransactionDialog({
                   <FormItem>
                     <FormLabel>Amount</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="0.00" {...field} />
+                      <Input type="number" inputMode="decimal" placeholder="0.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -170,10 +168,7 @@ export function AddTransactionDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />

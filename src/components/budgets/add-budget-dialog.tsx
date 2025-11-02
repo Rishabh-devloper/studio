@@ -31,21 +31,23 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { budgets } from "@/lib/data";
-import type { Category } from "@/lib/types";
+import { addBudget } from "@/app/actions";
 
 const budgetSchema = z.object({
   category: z.string().min(1, "Category is required"),
   limit: z.coerce.number().min(1, "Limit must be greater than 0"),
 });
 
-const categories: Category[] = [
+const categories = [
   "Food",
   "Transportation",
   "Entertainment",
   "Utilities",
   "Shopping",
+  "Healthcare",
+  "Education",
   "Travel",
+  "Rent",
   "Other",
 ];
 
@@ -65,14 +67,16 @@ export default function AddBudgetDialog({
     },
   });
 
-  const onSubmit = (values: z.infer<typeof budgetSchema>) => {
-    console.log(values);
-    budgets.push({
-        id: `budget_${Date.now()}`,
-        category: values.category as Category,
-        limit: values.limit,
-        spent: 0,
-    });
+  const onSubmit = async (values: z.infer<typeof budgetSchema>) => {
+    const result = await addBudget(values);
+    if ("error" in result) {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
     toast({
       title: "Success!",
       description: "Your new budget has been created.",

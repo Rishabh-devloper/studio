@@ -16,7 +16,7 @@ export interface Transaction {
   amount: number;
   type: "income" | "expense";
   category: Category;
-  account: string;
+  account?: string;
 }
 
 export interface Account {

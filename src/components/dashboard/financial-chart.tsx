@@ -18,15 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
 
-const chartData = [
-  { date: "Jan", income: 4000, expenses: 2400 },
-  { date: "Feb", income: 3000, expenses: 1398 },
-  { date: "Mar", income: 5000, expenses: 4800 },
-  { date: "Apr", income: 4780, expenses: 3908 },
-  { date: "May", income: 6890, expenses: 4800 },
-  { date: "Jun", income: 5390, expenses: 3800 },
-  { date: "Jul", income: 6490, expenses: 4300 },
-];
+interface FinancialChartProps {
+  data: { date: string; income: number; expenses: number }[];
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -59,7 +53,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function FinancialChart() {
+export default function FinancialChart({ data }: FinancialChartProps) {
+  // Use provided data or fallback to empty array
+  const chartData = data.length > 0 ? data : [
+    { date: "Jan", income: 0, expenses: 0 },
+    { date: "Feb", income: 0, expenses: 0 },
+    { date: "Mar", income: 0, expenses: 0 },
+    { date: "Apr", income: 0, expenses: 0 },
+    { date: "May", income: 0, expenses: 0 },
+    { date: "Jun", income: 0, expenses: 0 },
+    { date: "Jul", income: 0, expenses: 0 },
+  ];
   return (
     <Card className="h-full">
       <CardHeader>
