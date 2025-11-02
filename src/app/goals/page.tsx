@@ -1,4 +1,4 @@
-// src/app/goals/page.tsx
+// src/app/goals/page.tsx - COMPLETE UPDATED VERSION
 import {
   Card,
   CardContent,
@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 import { PlusCircle, Target, Trophy, TrendingUp, Calendar, CheckCircle, AlertCircle } from "lucide-react";
 import { format, formatDistanceToNow, isPast, differenceInDays } from "date-fns";
 import AddGoalDialog from "@/components/goals/add-goal-dialog";
+import ContributeToGoalDialog from "@/components/goals/contribute-to-goal-dialog";
 import { auth } from "@clerk/nextjs/server";
 import { Badge } from "@/components/ui/badge";
 
@@ -245,14 +246,29 @@ export default async function GoalsPage() {
                   </div>
 
                   {!isCompleted && (
-                    <div className="pt-2 border-t">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Remaining</span>
-                        <span className="font-semibold text-primary">
-                          {formatCurrency(target - current)}
-                        </span>
+                    <>
+                      <div className="pt-2 border-t">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Remaining</span>
+                          <span className="font-semibold text-primary">
+                            {formatCurrency(target - current)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                      
+                      {/* 🔥 NEW: Add Money Button */}
+                      <ContributeToGoalDialog
+                        goalId={goal.id}
+                        goalName={goal.name}
+                        currentAmount={current}
+                        targetAmount={target}
+                      >
+                        <Button className="w-full gap-2" variant="default">
+                          <PlusCircle className="h-4 w-4" />
+                          Add Money
+                        </Button>
+                      </ContributeToGoalDialog>
+                    </>
                   )}
                 </CardContent>
               </Card>

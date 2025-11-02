@@ -47,6 +47,7 @@ export async function addTransaction(input: z.infer<typeof AddTxnSchema>) {
 
     const signedAmount = (type === "expense" ? -Math.abs(amount) : Math.abs(amount)).toString();
 
+    // Insert the transaction
     await db.insert(transactionsTable).values({
       userId: userId,
       amount: signedAmount,
@@ -57,6 +58,31 @@ export async function addTransaction(input: z.infer<typeof AddTxnSchema>) {
       accountName: account.name,
       date: values.date ? new Date(values.date).toISOString() : new Date().toISOString(),
     } satisfies typeof transactionsTable.$inferInsert);
+
+    // 🔥 Update budget if this is an expense
+    if (type === "expense") {
+      // Find budget for this category
+      const budget = await db.query.budgets.findFirst({
+        where: and(
+          eq(budgetsTable.userId, userId),
+          eq(budgetsTable.category, values.category)
+        ),
+      });
+
+      if (budget) {
+        // Update the budget's spent amount
+        const newSpent = parseFloat(budget.spent) + Math.abs(amount);
+        await db
+          .update(budgetsTable)
+          .set({ spent: newSpent.toString() })
+          .where(
+            and(
+              eq(budgetsTable.id, budget.id),
+              eq(budgetsTable.userId, userId)
+            )
+          );
+      }
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/transactions");
@@ -107,6 +133,42 @@ export async function addTransactions(
     }));
 
     await db.insert(transactionsTable).values(formattedTransactions);
+
+    // 🔥 Update budgets for all expense transactions
+    const expenseTransactions = transactions.filter(t => t.type === "expense");
+    
+    // Group expenses by category
+    const expensesByCategory = expenseTransactions.reduce((acc, t) => {
+      const category = t.category || "Uncategorized";
+      if (!acc[category]) {
+        acc[category] = 0;
+      }
+      acc[category] += Math.abs(t.amount);
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Update each budget
+    for (const [category, totalAmount] of Object.entries(expensesByCategory)) {
+      const budget = await db.query.budgets.findFirst({
+        where: and(
+          eq(budgetsTable.userId, userId),
+          eq(budgetsTable.category, category)
+        ),
+      });
+
+      if (budget) {
+        const newSpent = parseFloat(budget.spent) + totalAmount;
+        await db
+          .update(budgetsTable)
+          .set({ spent: newSpent.toString() })
+          .where(
+            and(
+              eq(budgetsTable.id, budget.id),
+              eq(budgetsTable.userId, userId)
+            )
+          );
+      }
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/transactions");
@@ -182,9 +244,6 @@ export async function getSpendingByCategory() {
 
 
 // --- Account Actions ---
-// Ensure a default account exists for the user. This creates a durable default account
-// (e.g. "Main Account") the first time a user opens the app. This avoids empty
-// account lists for logged-in users and improves onboarding.
 async function ensureDefaultAccount(userId: string) {
   const existing = await db.query.accounts.findFirst({
     where: eq(accounts.userId, userId),
@@ -202,12 +261,10 @@ export async function getAllAccounts(): Promise<Array<typeof accountsType.$infer
   const { userId } = await auth();
   if (!userId) return [];
 
-  // Create a default account for new users so the UI always has at least one account to show.
   try {
     await ensureDefaultAccount(userId);
   } catch (e) {
     console.error("Failed to ensure default account:", e);
-    // continue and attempt to return whatever accounts exist
   }
 
   return await db.query.accounts.findMany({
@@ -216,7 +273,7 @@ export async function getAllAccounts(): Promise<Array<typeof accountsType.$infer
   });
 }
 
-// --- Budget, Goal, and other actions remain the same ---
+// --- Budget Actions ---
 
 const AddBudgetSchema = z.object({
   category: z.string().min(1),
@@ -231,11 +288,27 @@ export async function addBudget(input: z.infer<typeof AddBudgetSchema>) {
     const parsed = AddBudgetSchema.safeParse(input);
     if (!parsed.success) return { error: "Invalid data" };
 
+    // 🔥 Calculate initial spent amount from existing transactions
+    const existingExpenses = await db
+      .select({
+        total: sql<number>`COALESCE(ABS(SUM(${transactionsTable.amount})), 0)`,
+      })
+      .from(transactionsTable)
+      .where(
+        and(
+          eq(transactionsTable.userId, userId),
+          eq(transactionsTable.category, parsed.data.category),
+          eq(transactionsTable.type, 'expense')
+        )
+      );
+
+    const initialSpent = Number(existingExpenses[0]?.total ?? 0);
+
     await db.insert(budgetsTable).values({
       userId: userId,
       category: parsed.data.category,
       limit: parsed.data.limit.toString(),
-      spent: "0",
+      spent: initialSpent.toString(), // Start with existing expenses
     } satisfies typeof budgetsTable.$inferInsert);
 
     revalidatePath("/budgets");
@@ -254,6 +327,8 @@ export async function getAllBudgets() {
     where: eq(budgetsTable.userId, userId),
   });
 }
+
+// --- Goal Actions ---
 
 const AddGoalSchema = z.object({
   name: z.string().min(1),
@@ -294,7 +369,75 @@ export async function getAllGoals() {
   });
 }
 
-// ... other utility and report functions ...
+// 🔥 NEW: Contribute to Goal Action
+const ContributeToGoalSchema = z.object({
+  goalId: z.string().min(1),
+  amount: z.number().positive(),
+});
+
+export async function contributeToGoal(input: z.infer<typeof ContributeToGoalSchema>) {
+  try {
+    const { userId } = await auth();
+    if (!userId) return { error: "Unauthorized" };
+
+    const parsed = ContributeToGoalSchema.safeParse(input);
+    if (!parsed.success) return { error: "Invalid data" };
+
+    const { goalId, amount } = parsed.data;
+
+    // Verify goal belongs to user
+    const goal = await db.query.goals.findFirst({
+      where: and(
+        eq(goalsTable.id, goalId),
+        eq(goalsTable.userId, userId)
+      ),
+    });
+
+    if (!goal) {
+      return { error: "Goal not found or you don't have permission to access it." };
+    }
+
+    // Calculate new current amount
+    const newCurrentAmount = parseFloat(goal.currentAmount) + amount;
+    const targetAmount = parseFloat(goal.targetAmount);
+
+    // Don't allow contributions that exceed the target
+    if (newCurrentAmount > targetAmount) {
+      return { 
+        error: `Cannot contribute ₹${amount}. This would exceed the goal target by ₹${(newCurrentAmount - targetAmount).toFixed(2)}.` 
+      };
+    }
+
+    // Update the goal
+    await db
+      .update(goalsTable)
+      .set({ currentAmount: newCurrentAmount.toString() })
+      .where(
+        and(
+          eq(goalsTable.id, goalId),
+          eq(goalsTable.userId, userId)
+        )
+      );
+
+    revalidatePath("/goals");
+    revalidatePath("/dashboard");
+
+    // Check if goal is now complete
+    const isComplete = newCurrentAmount >= targetAmount;
+    
+    return { 
+      ok: true, 
+      isComplete,
+      newAmount: newCurrentAmount,
+      remaining: targetAmount - newCurrentAmount
+    };
+  } catch (e) {
+    console.error("Failed to contribute to goal:", e);
+    return { error: "An unexpected error occurred." };
+  }
+}
+
+// --- Monthly Financial Data ---
 
 export async function getMonthlyFinancialData() {
   const { userId } = await auth();
@@ -331,6 +474,8 @@ export async function getMonthlyFinancialData() {
     .slice(0, 7)
     .reverse();
 }
+
+// --- AI Category Suggestion ---
 
 export async function getCategorySuggestion(description: string, amount: number) {
   try {
