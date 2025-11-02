@@ -1,27 +1,10 @@
-import {
-  ArrowUpRight,
-  CircleDollarSign,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import SummaryCard from "@/components/dashboard/summary-card";
 import FinancialChart from "@/components/dashboard/financial-chart";
 import RecentTransactions from "@/components/dashboard/recent-transactions";
 import BudgetStatus from "@/components/dashboard/budget-status";
 import GoalProgress from "@/components/dashboard/goal-progress";
 import { AddTransactionDialog } from "@/components/dashboard/add-transaction-dialog";
+import { Button } from "@/components/ui/button";
 import {
   totalIncome,
   totalExpenses,
@@ -30,6 +13,11 @@ import {
   budgets,
   goals,
 } from "@/lib/data";
+import {
+  CircleDollarSign,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 
 export default function Dashboard() {
   return (
