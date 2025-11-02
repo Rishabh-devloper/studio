@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition } from "react";
@@ -34,31 +33,29 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getCategorySuggestion, addTransaction } from "@/app/actions";
 import { Wand2 } from "lucide-react";
+import type { accounts as accountsTable } from "@/db/schema";
 import type { Category } from "@/lib/types";
 
+// CORRECTED SCHEMA: Added accountName to ensure it's included in the form.
 const transactionSchema = z.object({
   description: z.string().min(1, "Description is required"),
   amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
   type: z.enum(["income", "expense"]),
   category: z.string().min(1, "Category is required"),
+  accountName: z.string().min(1, "Account is required"),
 });
 
 const categories: Category[] = [
-  "Food",
-  "Transportation",
-  "Entertainment",
-  "Utilities",
-  "Rent",
-  "Salary",
-  "Shopping",
-  "Travel",
-  "Other",
+  "Food", "Transportation", "Entertainment", "Utilities", "Rent", "Salary", "Shopping", "Travel", "Other",
 ];
 
+// CORRECTED PROPS: The dialog now requires an array of accounts to populate the dropdown.
 export function AddTransactionDialog({
   children,
+  accounts,
 }: {
   children: React.ReactNode;
+  accounts: (typeof accountsTable.$inferSelect)[];
 }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -71,6 +68,8 @@ export function AddTransactionDialog({
       amount: 0,
       type: "expense",
       category: "",
+      // Set a default account if available.
+      accountName: accounts[0]?.name || "",
     },
   });
 
@@ -78,43 +77,28 @@ export function AddTransactionDialog({
     const description = form.getValues("description");
     const amount = form.getValues("amount");
     if (!description || !amount) {
-        toast({
-            title: "Error",
-            description: "Please enter a description and amount to get a suggestion.",
-            variant: "destructive",
-        });
+        toast({ title: "Error", description: "Please enter a description and amount to get a suggestion.", variant: "destructive" });
         return;
     }
     
     startTransition(async () => {
         const result = await getCategorySuggestion(description, amount);
         if (result.error) {
-            toast({
-                title: "AI Suggestion Failed",
-                description: result.error,
-                variant: "destructive",
-            });
+            toast({ title: "AI Suggestion Failed", description: result.error, variant: "destructive" });
         } else if (result.category) {
             form.setValue("category", result.category);
-             toast({
-                title: "AI Suggestion",
-                description: `We've categorized this as "${result.category}".`,
-            });
+            toast({ title: "AI Suggestion", description: `We\'ve categorized this as "${result.category}".` });
         }
     });
   };
 
   const onSubmit = (values: z.infer<typeof transactionSchema>) => {
     startTransition(async () => {
-      const res = await addTransaction({
-        description: values.description,
-        amount: values.amount,
-        type: values.type,
-        category: values.category,
-        date: new Date().toISOString().split('T')[0],
-      });
-      if ((res as any)?.error) {
-        toast({ title: "Error", description: (res as any).error, variant: "destructive" });
+      // CORRECTED ACTION CALL: Now passes the complete object, including accountName.
+      const res = await addTransaction(values);
+      
+      if (res?.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
         return;
       }
       toast({ title: "Success!", description: "Your transaction has been added." });
@@ -129,9 +113,7 @@ export function AddTransactionDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Transaction</DialogTitle>
-          <DialogDescription>
-            Enter the details of your transaction below.
-          </DialogDescription>
+          <DialogDescription>Enter the details of your transaction below.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -169,11 +151,7 @@ export function AddTransactionDialog({
                   <FormItem>
                     <FormLabel>Type</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="income">Income</SelectItem>
                         <SelectItem value="expense">Expense</SelectItem>
@@ -184,6 +162,25 @@ export function AddTransactionDialog({
                 )}
               />
             </div>
+            {/* NEW FIELD: Dropdown to select the account. */}
+            <FormField
+                control={form.control}
+                name="accountName"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Account</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                {accounts.map((acc) => (
+                                    <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
             <FormField
               control={form.control}
               name="category"
@@ -191,21 +188,10 @@ export function AddTransactionDialog({
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                    <div className="flex gap-2">
-                    <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                    >
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
                         <SelectContent>
-                        {categories.map((cat) => (
-                            <SelectItem key={cat} value={cat}>
-                            {cat}
-                            </SelectItem>
-                        ))}
+                        {categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
                         </SelectContent>
                     </Select>
                      <Button type="button" variant="outline" size="icon" onClick={handleGetSuggestion} disabled={isPending}>
@@ -218,7 +204,7 @@ export function AddTransactionDialog({
               )}
             />
             <DialogFooter>
-              <Button type="submit">Add Transaction</Button>
+              <Button type="submit" disabled={isPending}>Add Transaction</Button>
             </DialogFooter>
           </form>
         </Form>
