@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { UserProfile } from "@clerk/nextjs";
+import { ClerkUserProfile } from "@/components/settings/clerk-user-profile";
 import { User, Shield, Database, AlertTriangle, Settings as SettingsIcon, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -183,17 +183,7 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="rounded-xl border-2 overflow-hidden bg-background">
-                <UserProfile 
-                  appearance={{
-                    elements: {
-                      rootBox: "w-full",
-                      card: "shadow-none border-0",
-                      navbar: "hidden",
-                      pageScrollBox: "p-0",
-                      page: "bg-transparent",
-                    }
-                  }}
-                />
+                <ClerkUserProfile />
               </div>
             </CardContent>
           </Card>
