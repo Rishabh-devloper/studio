@@ -59,15 +59,18 @@ export default async function DashboardPage() {
               <SummaryCard
                 title="Net Balance"
                 value={summary.netBalance}
-                icon={<CircleDollarSign className="h-5 w-5 text-muted-foreground" />} change={0}              />
+                icon={<CircleDollarSign className="h-5 w-5 text-muted-foreground" />} change={0}
+              />
               <SummaryCard
                 title="Total Income"
                 value={summary.totalIncome}
-                icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />} change={0}              />
+                icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />} change={0}
+              />
               <SummaryCard
                 title="Total Expenses"
                 value={summary.totalExpenses}
-                icon={<TrendingDown className="h-5 w-5 text-muted-foreground" />} change={0}              />
+                icon={<TrendingDown className="h-5 w-5 text-muted-foreground" />} change={0}
+              />
             </CardContent>
           </Card>
           <Card>
