@@ -3,8 +3,9 @@ import { auth } from "@clerk/nextjs/server";
 import { TransactionTabs } from "@/components/transactions/transaction-tabs";
 import { CsvUploadForm } from "@/components/transactions/csv-upload-form";
 import { Button } from "@/components/ui/button";
-import { File, PlusCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { AddTransactionDialog } from "@/components/dashboard/add-transaction-dialog";
+import { ExportTransactionsButton } from "@/components/transactions/export-transactions-button"; // Import the new component
 
 export default async function TransactionsPage() {
   // Fetch both transactions and accounts in parallel for efficiency.
@@ -38,10 +39,7 @@ export default async function TransactionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <CsvUploadForm />
-          <Button size="sm" variant="outline" className="h-9 gap-2" aria-label="Export transactions">
-            <File className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Export</span>
-          </Button>
+          <ExportTransactionsButton /> 
           {/* CORRECTED: The accounts prop is now passed to the dialog. */}
           <AddTransactionDialog accounts={accounts}>
             <Button size="sm" className="h-9 gap-2" aria-label="Add new transaction">

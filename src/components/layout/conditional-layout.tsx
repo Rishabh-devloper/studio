@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "./sidebar";
@@ -16,8 +16,10 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar />
-        <div className="flex flex-1 flex-col">
+        <div className="hidden md:block border-r">
+            <AppSidebar />
+        </div>
+        <div className="flex flex-1 flex-col bg-muted/40">
           <Header />
           <main className="flex-1 p-4 sm:p-6 lg:p-8">
             {children}

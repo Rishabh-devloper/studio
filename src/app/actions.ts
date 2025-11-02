@@ -57,6 +57,10 @@ export async function addTransaction(input: z.infer<typeof AddTxnSchema>) {
 
     revalidatePath("/dashboard");
     revalidatePath("/transactions");
+    revalidatePath("/reports");
+    revalidatePath("/budgets");
+    revalidatePath("/goals");
+
     return { ok: true };
   } catch (e) {
     console.error("Failed to add transaction:", e);
@@ -103,6 +107,10 @@ export async function addTransactions(
 
     revalidatePath("/dashboard");
     revalidatePath("/transactions");
+    revalidatePath("/reports");
+    revalidatePath("/budgets");
+    revalidatePath("/goals");
+    
     return { ok: true };
   } catch (e) {
     console.error("Failed to add batch transactions:", e);
@@ -127,6 +135,24 @@ export async function getAllTransactions() {
     where: eq(transactionsTable.userId, userId),
     orderBy: [desc(transactionsTable.date)],
   });
+}
+
+export async function getFinancialSummary() {
+  const { userId } = await auth();
+  if (!userId) {
+    return { totalIncome: 0, totalExpenses: 0, netBalance: 0 };
+  }
+
+  const [incomeRes, expenseRes] = await Promise.all([
+    db.select({ sum: sql<number>`COALESCE(SUM(CASE WHEN ${transactionsTable.type} = 'income' THEN ${transactionsTable.amount} ELSE 0 END), 0)` }).from(transactionsTable).where(eq(transactionsTable.userId, userId)),
+    db.select({ sum: sql<number>`COALESCE(SUM(CASE WHEN ${transactionsTable.type} = 'expense' THEN ${transactionsTable.amount} ELSE 0 END), 0)` }).from(transactionsTable).where(eq(transactionsTable.userId, userId)),
+  ]);
+
+  const totalIncome = Number(incomeRes?.[0]?.sum ?? 0);
+  const totalExpenses = Number(expenseRes?.[0]?.sum ?? 0);
+  const netBalance = totalIncome + totalExpenses;
+
+  return { totalIncome, totalExpenses, netBalance };
 }
 
 export async function getSpendingByCategory() {

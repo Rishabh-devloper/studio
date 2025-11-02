@@ -6,11 +6,16 @@ import GoalProgress from "@/components/dashboard/goal-progress";
 import { AddTransactionDialog } from "@/components/dashboard/add-transaction-dialog";
 import { Button } from "@/components/ui/button";
 import { CircleDollarSign, TrendingDown, TrendingUp } from "lucide-react";
-import { db } from "@/db";
-import { budgets as budgetsTable, goals as goalsTable, transactions as transactionsTable } from "@/db/schema";
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq, sql } from "drizzle-orm";
-import { getMonthlyFinancialData, getAllAccounts, getRecentTransactions, getAllBudgets, getAllGoals } from "@/app/actions";
+import {
+  getMonthlyFinancialData,
+  getAllAccounts,
+  getRecentTransactions,
+  getAllBudgets,
+  getAllGoals,
+  getFinancialSummary
+} from "@/app/actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -23,19 +28,14 @@ export default async function DashboardPage() {
     );
   }
 
-  const [recent, incomeSumRes, expenseSumRes, budgets, goals, monthlyData, accounts] = await Promise.all([
+  const [recent, budgets, goals, monthlyData, accounts, summary] = await Promise.all([
     getRecentTransactions(5),
-    db.select({ sum: sql<number>`COALESCE(SUM(CASE WHEN ${transactionsTable.type} = 'income' THEN ${transactionsTable.amount} ELSE 0 END), 0)` }).from(transactionsTable).where(eq(transactionsTable.userId, userId)),
-    db.select({ sum: sql<number>`COALESCE(SUM(CASE WHEN ${transactionsTable.type} = 'expense' THEN ${transactionsTable.amount} ELSE 0 END), 0)` }).from(transactionsTable).where(eq(transactionsTable.userId, userId)),
     getAllBudgets(),
     getAllGoals(),
     getMonthlyFinancialData(),
     getAllAccounts(),
+    getFinancialSummary(),
   ]);
-
-  const totalIncome = Number(incomeSumRes?.[0]?.sum ?? 0);
-  const totalExpenses = Number(expenseSumRes?.[0]?.sum ?? 0);
-  const netBalance = totalIncome + totalExpenses; // Expenses are negative
 
   return (
     <div className="flex flex-col gap-8" role="main">
@@ -45,31 +45,69 @@ export default async function DashboardPage() {
           <Button>Add Transaction</Button>
         </AddTransactionDialog>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <SummaryCard
-          title="Net Balance"
-          value={netBalance}
-          icon={<CircleDollarSign className="h-5 w-5 text-muted-foreground" />} change={0}        />
-        <SummaryCard
-          title="Total Income"
-          value={totalIncome}
-          icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />} change={0}        />
-        <SummaryCard
-          title="Total Expenses"
-          value={totalExpenses}
-          icon={<TrendingDown className="h-5 w-5 text-muted-foreground" />} change={0}        />
-      </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <FinancialChart data={monthlyData} />
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+        {/* Left Column */}
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Financial Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-3">
+              <SummaryCard
+                title="Net Balance"
+                value={summary.netBalance}
+                icon={<CircleDollarSign className="h-5 w-5 text-muted-foreground" />} change={0}              />
+              <SummaryCard
+                title="Total Income"
+                value={summary.totalIncome}
+                icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />} change={0}              />
+              <SummaryCard
+                title="Total Expenses"
+                value={summary.totalExpenses}
+                icon={<TrendingDown className="h-5 w-5 text-muted-foreground" />} change={0}              />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RecentTransactions transactions={recent} />
+            </CardContent>
+          </Card>
         </div>
-        <div className="lg:col-span-2">
-          <RecentTransactions transactions={recent} />
+
+        {/* Right Column */}
+        <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FinancialChart data={monthlyData} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Budget Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BudgetStatus budgets={budgets} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Goal Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <GoalProgress goals={goals} />
+            </CardContent>
+          </Card>
         </div>
-      </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <BudgetStatus budgets={budgets} />
-        <GoalProgress goals={goals} />
+
       </div>
     </div>
   );
