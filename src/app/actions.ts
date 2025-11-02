@@ -33,14 +33,25 @@ export async function addTransaction(input: z.infer<typeof AddTxnSchema>) {
     const parsed = AddTxnSchema.safeParse(input);
     if (!parsed.success) return { error: "Invalid data" };
 
-    const { amount, type, ...values } = parsed.data;
+    const { amount, type, accountName, ...values } = parsed.data;
+
+    const account = await db.query.accounts.findFirst({
+      where: and(eq(accounts.userId, userId), eq(accounts.name, accountName)),
+    });
+
+    if (!account) {
+      return { error: `Account "${accountName}" not found.` };
+    }
+
     const signedAmount = type === "expense" ? -Math.abs(amount) : Math.abs(amount);
 
     await db.insert(transactionsTable).values({
       userId,
-      amount: signedAmount.toString(), // Drizzle requires string for numeric types
+      amount: signedAmount,
       type,
       ...values,
+      accountId: account.id,
+      accountName: account.name, 
       date: values.date ? new Date(values.date) : new Date(),
     });
 
@@ -61,7 +72,6 @@ const TransactionBatchSchema = z.object({
   category: z.string().optional(),
 });
 
-// PERMANENT FIX: This function is now robust and safe.
 export async function addTransactions(
   transactions: z.infer<typeof TransactionBatchSchema>[]
 ) {
@@ -69,7 +79,6 @@ export async function addTransactions(
     const { userId } = await auth();
     if (!userId) return { error: "Unauthorized" };
 
-    // 1. Fetch the user's first account to use as a safe default.
     const userAccounts = await getAllAccounts();
     if (userAccounts.length === 0) {
       return {
@@ -77,19 +86,17 @@ export async function addTransactions(
           "You must have at least one account to import transactions. Please add an account and try again.",
       };
     }
-    const defaultAccountName = userAccounts[0].name;
+    const defaultAccount = userAccounts[0];
 
-    // 2. Format transactions with the safe default account.
     const formattedTransactions = transactions.map((t) => ({
       userId,
       description: t.description,
-      amount: (
-        t.type === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount)
-      ).toString(),
+      amount: t.type === "expense" ? -Math.abs(t.amount) : Math.abs(t.amount),
       type: t.type,
       category: t.category || "Uncategorized",
       date: new Date(t.date),
-      accountName: defaultAccountName, // Use the fetched default account
+      accountName: defaultAccount.name,
+      accountId: defaultAccount.id,
     }));
 
     await db.insert(transactionsTable).values(formattedTransactions);
@@ -124,7 +131,6 @@ export async function getAllTransactions() {
 
 // --- Account Actions ---
 
-// PERMANENT FIX: The return type is now explicit, preventing type inference errors in Promise.all
 export async function getAllAccounts(): Promise<Array<typeof accountsType.$inferSelect>> {
   const { userId } = await auth();
   if (!userId) return [];
@@ -152,8 +158,8 @@ export async function addBudget(input: z.infer<typeof AddBudgetSchema>) {
     await db.insert(budgetsTable).values({
       userId,
       category: parsed.data.category,
-      limit: parsed.data.limit.toString(),
-      spent: "0",
+      limit: parsed.data.limit,
+      spent: 0,
     });
 
     revalidatePath("/budgets");
@@ -190,8 +196,8 @@ export async function addGoal(input: z.infer<typeof AddGoalSchema>) {
     await db.insert(goalsTable).values({
       userId,
       name: parsed.data.name,
-      targetAmount: parsed.data.targetAmount.toString(),
-      currentAmount: "0",
+      targetAmount: parsed.data.targetAmount,
+      currentAmount: 0,
       deadline: parsed.data.deadline ? new Date(parsed.data.deadline) : null,
     });
 
