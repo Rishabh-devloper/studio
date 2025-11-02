@@ -1,17 +1,18 @@
+// src/app/page.tsx - Updated Stats Section with INR
 import { SignInButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, TrendingUp, Target, BarChart3, Smartphone, Lock, Zap } from "lucide-react";
+import { ArrowRight, Shield, TrendingUp, Target, BarChart3, Smartphone, Lock, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function LandingPage() {
   const user = await currentUser();
   
-  // Redirect signed-in users to dashboard
   if (user) {
     redirect("/dashboard");
   }
+  
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
@@ -51,7 +52,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section - UPDATED WITH INR */}
       <section className="border-y bg-muted/30 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
@@ -60,7 +61,7 @@ export default async function LandingPage() {
               <div className="mt-2 text-sm text-muted-foreground">Active Users</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-primary">$2M+</div>
+              <div className="text-4xl font-bold text-primary">₹15Cr+</div>
               <div className="mt-2 text-sm text-muted-foreground">Money Tracked</div>
             </div>
             <div className="text-center">
@@ -109,13 +110,13 @@ export default async function LandingPage() {
             />
             <FeatureCard
               icon={<Lock className="h-8 w-8" aria-hidden="true" />}
-              title="Bank-Level Security"
-              description="Your data is encrypted and protected with the same security standards used by major financial institutions."
+              title="Best Security"
+              description="Your data is encrypted and protected with the best security standards used by major financial institutions."
             />
             <FeatureCard
-              icon={<Zap className="h-8 w-8" aria-hidden="true" />}
-              title="AI-Powered Insights"
-              description="Get intelligent suggestions for transaction categorization and personalized financial recommendations."
+              icon={<FileSpreadsheet className="h-8 w-8" aria-hidden="true" />}
+              title="CSV Import & Export"
+              description="Easily import your existing transaction data from CSV files and export your financial records for backup or analysis."
             />
           </div>
         </div>
@@ -145,24 +146,24 @@ export default async function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Loved by users worldwide
+              Loved by users across India
             </h2>
           </div>
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             <TestimonialCard
-              quote="WealthWise transformed how I manage money. I've saved $5,000 in just 6 months!"
-              author="Sarah Johnson"
-              role="Marketing Manager"
+              quote="WealthWise transformed how I manage money. I've saved ₹3,75,000 in just 6 months!"
+              author="Priya Sharma"
+              role="Marketing Manager, Mumbai"
             />
             <TestimonialCard
-              quote="The goal tracking feature helped me finally save for my dream vacation. Highly recommend!"
-              author="Michael Chen"
-              role="Software Engineer"
+              quote="The goal tracking feature helped me finally save for my dream bike. Highly recommend!"
+              author="Rahul Verma"
+              role="Software Engineer, Bangalore"
             />
             <TestimonialCard
               quote="Beautiful UI, powerful features. This is the personal finance app I've been waiting for."
-              author="Emma Williams"
-              role="Freelance Designer"
+              author="Anjali Patel"
+              role="Freelance Designer, Delhi"
             />
           </div>
         </div>
@@ -176,7 +177,7 @@ export default async function LandingPage() {
             Ready to take control of your finances?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg opacity-90">
-            Join thousands of users who are already managing their wealth wisely. Get started for free today.
+            Join thousands of Indians who are already managing their wealth wisely. Get started for free today.
           </p>
           <div className="mt-10">
             <SignInButton mode="modal">
@@ -204,7 +205,7 @@ export default async function LandingPage() {
             </nav>
           </div>
           <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} WealthWise. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} WealthWise. All rights reserved. Made in India 🇮🇳</p>
           </div>
         </div>
       </footer>
