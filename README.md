@@ -58,9 +58,13 @@ This project uses a modern, "Bleeding Edge" serverless architecture:
 
 | Budget Management | Financial Goals |
 |:---:|:---:|
-| <img src="./Budgets.png" width="400" alt="Budgets"> | <img src=".Goals.png" width="400" alt="Goals"> |
+| <img src="./Budgets.png" width="400" alt="Budgets"> | <img src="./Goals.png" width="400" alt="Goals"> 
 
-*(Note: Create a folder named `screenshots` in your repo and upload your images there for these to work)*
+|Reports |
+|:---:|:---:|
+| <img src="./Reports.png" width="800" alt="Budgets"> |
+
+
 
 ---
 
