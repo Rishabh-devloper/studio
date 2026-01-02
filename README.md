@@ -1,7 +1,7 @@
 # 💰 WealthWise - Smart Personal Finance Tracker
 
-![WealthWise Banner](https://via.placeholder.com/1200x600?text=WealthWise+Dashboard+Preview) 
-*(Note: Replace the link above with the actual relative path to your dashboard screenshot, e.g., ./screenshots/dashboard.png)*
+![WealthWise Banner](./dashboard.png) 
+
 
 ## 🚀 Live Demo
 [**Click here to view the live application**](https://studio-virid-tau.vercel.app/)
