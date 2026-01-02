@@ -60,7 +60,7 @@ This project uses a modern, "Bleeding Edge" serverless architecture:
 |:---:|:---:|
 | <img src="./Budgets.png" width="400" alt="Budgets"> | <img src="./Goals.png" width="400" alt="Goals"> 
 
-|Reports |
+| Reports |
 |:---:|:---:|
 | <img src="./Reports.png" width="800" alt="Budgets"> |
 
