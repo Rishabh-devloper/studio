@@ -1,6 +1,6 @@
 # 💰 WealthWise - Smart Personal Finance Tracker
 
-![WealthWise Banner](./dashboard.png) 
+![WealthWise Banner](./Dashboard.png) 
 
 
 ## 🚀 Live Demo
