@@ -1,6 +1,6 @@
 # 💰 WealthWise - Smart Personal Finance Tracker
 
-![WealthWise Banner](./Dashboard.png) 
+![WealthWise Banner](./banner.png) 
 
 
 ## 🚀 Live Demo
@@ -54,11 +54,11 @@ This project uses a modern, "Bleeding Edge" serverless architecture:
 
 | Dashboard | Transactions & CSV |
 |:---:|:---:|
-| <img src="./screenshots/dashboard.png" width="400" alt="Dashboard"> | <img src="./screenshots/transactions.png" width="400" alt="Transactions"> |
+| <img src="./Dashboard.png" width="400" alt="Dashboard"> | <img src="./Transactions.png" width="400" alt="Transactions"> |
 
 | Budget Management | Financial Goals |
 |:---:|:---:|
-| <img src="./screenshots/budgets.png" width="400" alt="Budgets"> | <img src="./screenshots/goals.png" width="400" alt="Goals"> |
+| <img src="./Budgets.png" width="400" alt="Budgets"> | <img src=".Goals.png" width="400" alt="Goals"> |
 
 *(Note: Create a folder named `screenshots` in your repo and upload your images there for these to work)*
 
